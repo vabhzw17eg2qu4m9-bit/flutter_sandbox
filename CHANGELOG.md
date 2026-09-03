@@ -1,3 +1,7 @@
+## 0.1.6 (2026-09-03)
+
+- chore: re-sync resource_limits/tool_policy formatting with FAH upstream (v0.1.286) (#9)
+
 ## 0.1.5 (2026-09-03)
 
 - chore: add Release/License/pub-points badges (match fah_hub_client set) (#8)
