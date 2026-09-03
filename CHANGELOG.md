@@ -1,3 +1,7 @@
+## 0.1.4 (2026-09-03)
+
+- chore: add pub/CRAP/coverage badges to README (match FAH style) (#7)
+
 ## 0.1.3 (2026-09-03)
 
 - ci: make auto-release push race-tolerant (#6)
