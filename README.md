@@ -1,6 +1,9 @@
 # flutter_sandbox
 
 [![CI](https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox/actions/workflows/ci.yml)
+[![pub package](https://img.shields.io/pub/v/flutter_sandbox.svg)](https://pub.dev/packages/flutter_sandbox)
+[![CRAP max 12.0 — ratchet only-down](https://img.shields.io/badge/CRAP%20max-12.0-brightgreen)](https://github.com/IstiN/crap4dart)
+[![coverage ≥ 90%](https://img.shields.io/badge/coverage-%E2%89%A5%2090%25-brightgreen)](https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox)
 
 Standalone command sandboxing: the `fa_cube` sandbox subsystem extracted
 verbatim from flutter_agent_harness, shipped as a reusable package and a
