@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dart-lang/setup-dart@v1
         with:
@@ -81,7 +81,7 @@ jobs:
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
       || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v'))
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dart-lang/setup-dart@v1
         with:
@@ -124,7 +124,7 @@ jobs:
             os: windows
             arch: x64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dart-lang/setup-dart@v1
         with:
@@ -202,7 +202,7 @@ jobs:
       contents: write # push the release commit + annotated tag
       actions: write # dispatch CI at the new tag
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
