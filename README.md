@@ -108,7 +108,7 @@ scanner is quote-aware but not a shell parser, the network scan sees only
 The kernel sandbox backends are the hard boundary; where kernel mode is
 unavailable (Windows, unsupported kernels), there is no hard boundary.
 Denials are refused, not audited. See the confinement contract in
-[docs/cubes.md](docs/cubes.md).
+[doc/cubes.md](doc/cubes.md).
 
 ## Development
 
@@ -121,4 +121,4 @@ The pre-commit gate runs analyze, format checks, the test suite with
 coverage (>= 80% of `lib/`), and copy-paste detection. Integration-tagged
 tests are excluded by default: `dart test --tags integration` runs them.
 
-The full cube manifest reference lives in [docs/cubes.md](docs/cubes.md).
+The full cube manifest reference lives in [doc/cubes.md](doc/cubes.md).
