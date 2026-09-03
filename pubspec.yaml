@@ -1,6 +1,6 @@
 name: flutter_sandbox
 description: Standalone command sandboxing - run any console command inside a policy or kernel sandbox (macOS sandbox-exec, Linux unshare, Windows Job Object descriptor).
-version: 0.1.2
+version: 0.1.3
 repository: https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox
 environment:
   sdk: '>=3.12.0 <4.0.0'

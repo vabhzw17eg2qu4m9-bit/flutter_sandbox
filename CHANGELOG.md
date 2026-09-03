@@ -1,3 +1,7 @@
+## 0.1.3 (2026-09-03)
+
+- ci: make auto-release push race-tolerant (#6)
+
 ## 0.1.2 (2026-09-03)
 
 - chore(deps): bump actions/setup-python from 5 to 7 (#4)
