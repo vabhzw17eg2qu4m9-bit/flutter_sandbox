@@ -1,3 +1,10 @@
+## 0.1.2 (2026-09-03)
+
+- chore(deps): bump actions/setup-python from 5 to 7 (#4)
+- chore(deps): bump actions/checkout from 4 to 7 (#3)
+- chore(deps): bump actions/upload-artifact from 4 to 7 (#2)
+- chore: rename docs/ to doc/ (pub package layout convention) (#5)
+
 ## 0.1.1 (2026-09-03)
 
 - feat(cube): extract fa_cube sandbox subsystem into standalone flutter_sandbox package (#1)
