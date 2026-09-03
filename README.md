@@ -1,6 +1,9 @@
 # flutter_sandbox
 
 [![CI](https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/vabhzw17eg2qu4m9-bit/flutter_sandbox)](https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![pub points](https://img.shields.io/pub/points/flutter_sandbox.svg)](https://pub.dev/packages/flutter_sandbox/score)
 [![pub package](https://img.shields.io/pub/v/flutter_sandbox.svg)](https://pub.dev/packages/flutter_sandbox)
 [![CRAP max 12.0 — ratchet only-down](https://img.shields.io/badge/CRAP%20max-12.0-brightgreen)](https://github.com/IstiN/crap4dart)
 [![coverage ≥ 90%](https://img.shields.io/badge/coverage-%E2%89%A5%2090%25-brightgreen)](https://github.com/vabhzw17eg2qu4m9-bit/flutter_sandbox)
