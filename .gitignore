@@ -1,0 +1,13 @@
+# Dart
+.dart_tool/
+.packages
+build/
+coverage/
+*.iml
+.idea/
+.vscode/
+.DS_Store
+# .fah/ holds runtime sandbox state (cubes, cube-cache, cube-profiles, tmp).
+# Nothing under .fah is ignored: committed example manifests stay visible.
+# Release binaries produced by the tag workflow.
+/dist/

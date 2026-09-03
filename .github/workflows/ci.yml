@@ -1,0 +1,249 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  quality:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - run: dart pub get
+
+      - name: File size guard (no dart file over 2800 lines)
+        run: |
+          violations=$(find lib test bin -name '*.dart' \
+            ! -name '*.g.dart' \
+            -exec sh -c 'lines=$(wc -l < "$1"); if [ "$lines" -gt 2800 ]; then echo "$1: $lines lines"; fi' _ {} \;)
+          if [ -n "$violations" ]; then echo "$violations"; exit 1; fi
+
+      - name: dart analyze
+        run: dart analyze
+
+      - name: dart format (blocking check)
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: dart test --coverage (excluding integration)
+        run: dart test --coverage=coverage --exclude-tags integration
+
+      - name: Format coverage to lcov
+        run: dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info
+
+      - name: Coverage ratchet (lib/ >= 80%)
+        run: python3 scripts/check_coverage.py 80
+
+      - name: CRAP ratchet (threshold pinned in crap4dart.yaml)
+        run: |
+          dart pub global activate crap4dart 0.2.1
+          dart pub global run crap4dart analyze
+
+      - name: Duplication guard (lib/ < 1.4%)
+        run: |
+          npx --yes jscpd@5 --min-tokens 50 --min-lines 5 --reporters json \
+            --output /tmp/jscpd-ci lib/ || true
+          python3 - <<'EOF'
+          import json, sys
+          try:
+              with open('/tmp/jscpd-ci/jscpd-report.json') as f:
+                  pct = json.load(f)['statistics']['total']['percentage']
+          except Exception:
+              pct = 0.0
+          print(f'Duplication: {pct}% (threshold < 1.4%)')
+          sys.exit(0 if float(pct) < 1.4 else 1)
+          EOF
+
+  integration:
+    name: Integration tests (kernel backends)
+    runs-on: ubuntu-latest
+    needs: quality
+    permissions:
+      contents: read
+    # Tag builds only; the live kernel tests self-skip when the runner has
+    # no user namespaces.
+    if: >-
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
+      || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v'))
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - run: dart pub get
+
+      - name: dart test --tags integration
+        run: dart test --tags integration
+
+  binaries:
+    name: Build fsb binaries
+    runs-on: ${{ matrix.runner }}
+    needs: quality
+    if: >-
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
+      || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: write # attach assets to the GitHub Release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            os: linux
+            arch: x64
+          # Native ARM64 runner — dart build cli does not cross-compile.
+          - runner: ubuntu-24.04-arm
+            os: linux
+            arch: arm64
+          - runner: macos-latest
+            os: macos
+            arch: arm64
+          # Intel Mac runner (AOT cannot cross-compile macos_x64 from arm64
+          # — only linux_* targets cross).
+          - runner: macos-15-intel
+            os: macos
+            arch: x64
+          - runner: windows-latest
+            os: windows
+            arch: x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Verify tag matches pubspec version
+        # Explicit bash: the default shell on Windows runners is pwsh and
+        # the POSIX test below dies there with a ParserError.
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "tag=$tag pubspec=$version"
+          if [ "$tag" != "$version" ]; then
+            echo "Tag v$tag does not match pubspec version $version"
+            exit 1
+          fi
+
+      - run: dart pub get
+
+      - name: Build CLI binary
+        shell: bash
+        # dart build cli produces dist/bundle/bin/fsb (fsb.exe on Windows);
+        # the artifact is the renamed executable itself: fsb-<os>-<arch>.
+        run: |
+          dart build cli --target=bin/fsb.dart -o dist
+          name="fsb-${{ matrix.os }}-${{ matrix.arch }}"
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            mv dist/bundle/bin/fsb.exe "$name.exe"
+          else
+            mv dist/bundle/bin/fsb "$name"
+            chmod +x "$name"
+          fi
+
+      - name: Ad-hoc sign binary (macOS)
+        if: matrix.os == 'macos'
+        shell: bash
+        run: codesign --force --sign - "fsb-${{ matrix.os }}-${{ matrix.arch }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fsb-${{ matrix.os }}-${{ matrix.arch }}
+          path: fsb-*
+
+      - name: Attach binary to the GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          asset="fsb-${{ matrix.os }}-${{ matrix.arch }}"
+          if [ "${{ matrix.os }}" = "windows" ]; then asset="$asset.exe"; fi
+          # gh release upload needs the release to exist; create it lazily
+          # (matrix jobs race here, so a duplicate create is tolerated).
+          if ! gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" --generate-notes \
+              --repo "${GITHUB_REPOSITORY}" || true
+          fi
+          gh release upload "${GITHUB_REF_NAME}" "$asset" --clobber --repo "${GITHUB_REPOSITORY}"
+
+  release:
+    name: Auto-release (patch bump + tag)
+    runs-on: ubuntu-latest
+    needs: quality
+    # Every push to main gets a release with an auto-incremented patch
+    # version. Release commits are skipped (loop guard).
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(release):'))
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    concurrency:
+      group: release-main
+      cancel-in-progress: false
+    permissions:
+      contents: write # push the release commit + annotated tag
+      actions: write # dispatch CI at the new tag
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump version, changelog, tag and push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          pub=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          latest=$(git tag -l 'v*' --sort=-v:refname | head -1); latest=${latest#v}
+          # Base the patch bump on whichever of pubspec / latest tag is ahead.
+          base=$(printf '%s\n%s\n' "$pub" "$latest" | sort -V | tail -1)
+          next=$(echo "$base" | awk -F. -v OFS=. '{NF=3; $NF=$NF+1; print}')
+          echo "Releasing v$next (pubspec=$pub latest-tag=$latest)"
+
+          # Changelog body: fold the `## Unreleased` section when present,
+          # else derive bullets from commits since the previous tag.
+          if grep -q '^## Unreleased' CHANGELOG.md; then
+            body=$(awk '/^## Unreleased/{flag=1;next} /^## /{flag=0} flag' CHANGELOG.md | sed -e '/./,$!d')
+          else
+            body=$(git log --no-merges --pretty='- %s' "${latest:+v$latest..}"HEAD)
+          fi
+          # Dispatching twice with no commits in between yields an empty
+          # range — fall back to the tip subject so the heading keeps a bullet.
+          body=${body:-$(git log -1 --pretty='- %s')}
+          {
+            echo "## $next ($(date +%Y-%m-%d))"
+            echo
+            echo "$body"
+            echo
+            cat CHANGELOG.md
+          } > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
+          sed -i "s/^version: .*/version: $next/" pubspec.yaml
+          git add CHANGELOG.md pubspec.yaml
+          git commit -m "chore(release): v$next"
+          git tag -a "v$next" -m "v$next"
+          git push --follow-tags origin "HEAD:main"
+          # GITHUB_TOKEN pushes do not trigger workflow runs; dispatch CI at
+          # the new tag so integration + binaries run for the auto-release.
+          gh workflow run ci.yml --ref "v$next"
