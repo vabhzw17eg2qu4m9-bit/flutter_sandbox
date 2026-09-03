@@ -1,3 +1,7 @@
+## 0.1.5 (2026-09-03)
+
+- chore: add Release/License/pub-points badges (match fah_hub_client set) (#8)
+
 ## 0.1.4 (2026-09-03)
 
 - chore: add pub/CRAP/coverage badges to README (match FAH style) (#7)
