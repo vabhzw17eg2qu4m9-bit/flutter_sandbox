@@ -197,7 +197,7 @@ jobs:
       || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     concurrency:
       group: release-main
-      cancel-in-progress: false
+      cancel-in-progress: true
     permissions:
       contents: write # push the release commit + annotated tag
       actions: write # dispatch CI at the new tag
@@ -242,8 +242,28 @@ jobs:
           sed -i "s/^version: .*/version: $next/" pubspec.yaml
           git add CHANGELOG.md pubspec.yaml
           git commit -m "chore(release): v$next"
-          git tag -a "v$next" -m "v$next"
-          git push --follow-tags origin "HEAD:main"
+          # Rebase onto the latest main before pushing: concurrent merges
+          # to main make the stale push a non-fast-forward. The release
+          # commit only touches CHANGELOG.md + pubspec.yaml, so the rebase
+          # is clean. The tag is (re)created after each rebase so it points
+          # at the commit that actually lands.
+          released=0
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main \
+               && git tag -f -a "v$next" -m "v$next" \
+               && git push --follow-tags origin "HEAD:main"; then
+              released=1
+              break
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "Release push attempt $attempt failed (main moved concurrently); retrying..."
+            sleep 5
+          done
+          if [ "$released" -ne 1 ]; then
+            echo "ERROR: release push failed after 3 attempts; main is moving too fast" >&2
+            exit 1
+          fi
           # GITHUB_TOKEN pushes do not trigger workflow runs; dispatch CI at
           # the new tag so integration + binaries run for the auto-release.
           gh workflow run ci.yml --ref "v$next"
