@@ -131,7 +131,7 @@ void main() {
 
   group('docs/cubes.md example', () {
     test('parses via CubeSpec.fromYaml (strict)', () {
-      final docs = File('docs/cubes.md').readAsStringSync();
+      final docs = File('doc/cubes.md').readAsStringSync();
       final match = _docsYamlExample.firstMatch(docs);
       expect(
         match,
@@ -145,7 +145,7 @@ void main() {
     });
 
     test('example policies behave as documented', () {
-      final docs = File('docs/cubes.md').readAsStringSync();
+      final docs = File('doc/cubes.md').readAsStringSync();
       final spec = CubeSpec.fromYaml(
         loadYaml(_docsYamlExample.firstMatch(docs)!.group(1)!),
       );

@@ -46,7 +46,7 @@ copies — that swap-back only works if the ported code stays byte-identical.
   prefix; ported-behavior output stays verbatim (denials: `fa_cube[...]`
   prefix + exit 127; resolver: `cube: file not found: ...`).
 - `bin/fsb.dart` — the executable entry point (may use `dart:io`).
-- `schema/` — JSON schema for cube manifests. `docs/` — user docs.
+- `schema/` — JSON schema for cube manifests. `doc/` — user docs.
   `test/` — mirrors `lib/`.
 
 ## Hard rules
