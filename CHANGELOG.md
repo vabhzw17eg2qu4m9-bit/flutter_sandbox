@@ -1,3 +1,8 @@
+## 0.1.1 (2026-09-03)
+
+- feat(cube): extract fa_cube sandbox subsystem into standalone flutter_sandbox package (#1)
+- chore: initialize repository
+
 # Changelog
 
 ## 0.1.0
